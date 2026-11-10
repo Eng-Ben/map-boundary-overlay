@@ -1,73 +1,127 @@
-# React + TypeScript + Vite
+# map-boundary-overlay
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+[![CI](https://github.com/Eng-Ben/map-boundary-overlay/actions/workflows/ci.yml/badge.svg)](https://github.com/Eng-Ben/map-boundary-overlay/actions/workflows/ci.yml)
 
-Currently, two official plugins are available:
+A progressive web app that overlays your own map image (a screenshot or scanned map) on Kartverket's topographic map using control points, and shows your GPS position on top. Useful for checking trails and boundaries in the field, such as hunting areas.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+> **Approximate placement.** The overlay is an estimate. Always verify boundaries yourself before relying on them.
 
-## React Compiler
+## Demo
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+_Coming soon._ A GIF and a link to the live demo on GitHub Pages will be added. The demo uses a synthetic map, never real third-party map data.
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Planned for v0.1.0:
 
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+- Upload a map image (PNG, JPEG, WebP)
+- Kartverket topographic base map with attribution
+- Mark control points with a crosshair on both the image and the base map
+- Overlay with adjustable opacity
+- Error estimate in metres (leave-one-out, from 4 points)
+- GPS position with accuracy circle
+- Local storage of map projects, with full deletion
+- Installable PWA
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Architecture
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+Client-only app with no backend. Dependencies point one way: `features → map / storage → core`.
+
+```mermaid
+flowchart TD
+  features["features (React): library, upload, control-points, field-view"]
+  map["map: MapLibre GL JS"]
+  storage["storage: IndexedDB (idb)"]
+  core["core: georeferencing (pure TypeScript)"]
+  features --> map
+  features --> storage
+  map --> core
+  storage --> core
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Georeferencing fits an affine transform with least squares in Web Mercator metres and passes the four image corners to MapLibre. See [docs/architecture.md](docs/architecture.md) and the decisions in [docs/adr/](docs/adr/).
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+## Tech stack
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+| Choice                             | Why                                                                |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| React + Vite + TypeScript (strict) | Fast builds, strong typing, shared setup with other portfolio apps |
+| MapLibre GL JS                     | Open-source WebGL map with native image overlays                   |
+| IndexedDB via idb                  | Stores large image blobs locally without a server                  |
+| vite-plugin-pwa                    | Installable app and offline app shell                              |
+| ESLint + Prettier                  | Code quality and consistent formatting                             |
+| Vitest                             | Fast unit tests for the georeferencing core                        |
+| Playwright                         | End-to-end tests against the production build                      |
+| nginx (non-root)                   | Small static image for the home server                             |
+
+## Security
+
+| Measure                                                            | Why                                            |
+| ------------------------------------------------------------------ | ---------------------------------------------- |
+| No backend, accounts or analytics                                  | Nothing to breach and no tracking              |
+| GPS position kept in memory only                                   | Location history is never stored               |
+| Map projects stored only in the browser; delete removes everything | Users keep control of their own data           |
+| Container runs nginx as a non-root user                            | Limits damage if the web server is compromised |
+| CI jobs use least-privilege permissions                            | A compromised step cannot publish or write     |
+
+Who can see what: Kartverket receives tile requests and can see which area is displayed. When self-hosted, IP addresses appear in the reverse proxy (Caddy) and nginx logs, and at Cloudflare if public access is enabled.
+
+## Repository layout
+
+```text
+.github/workflows/   CI, GitHub Pages and container image workflows
+docs/                Architecture notes and ADRs (docs/adr/)
+e2e/                 Playwright end-to-end tests
+public/              Static assets (icons, manifest)
+src/                 App source (core, map, storage, features, app)
 ```
+
+## Running
+
+Requires Node 26 (see `.nvmrc`).
+
+```sh
+npm ci
+npm run dev
+```
+
+Production build and preview:
+
+```sh
+npm run build
+npm run preview
+```
+
+## Testing and evaluation
+
+```sh
+npm run lint
+npm run typecheck
+npm run format:check
+npm test
+npm run e2e
+```
+
+End-to-end tests run in CI on Linux. Current Playwright browsers do not support macOS 13, so `npm run e2e` will not run on that version (see [ADR 004](docs/adr/004-e2e-in-ci-only.md)).
+
+## Roadmap
+
+- [ ] M0: Project setup, CI, GitHub Pages and container image
+- [ ] M1: Topographic base map, attribution and disclaimer
+- [ ] M2: Georeferencing core with tests
+- [ ] M3: Image upload and control points
+- [ ] M4: Overlay and GPS
+- [ ] M5: Storage and PWA, tested with both base paths
+- [ ] M6: Field test, README and v0.1.0
+
+Known limitations:
+
+- Affine fit only: placement error grows with map size; a warning is shown above about 20 km.
+- No offline base map in v0.1.0.
+- End-to-end tests cannot run locally on macOS 13.
+
+## Data sources, licenses and attribution
+
+- Code: [MIT](LICENSE).
+- Base map: © Kartverket, licensed under CC BY 4.0. Exact attribution text needs verification and will be added with the map in M1.
+- Map data from Inatur is never fetched automatically, and Inatur screenshots are not included in this repository.
