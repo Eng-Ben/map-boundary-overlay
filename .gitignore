@@ -1,0 +1,33 @@
+# Files and folders Git should never track.
+# Covers dependencies, build output, test reports, local editor/OS files,
+# and secrets (.env, secrets/) as required by the portfolio standards.
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+*.local
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Secrets (real values only live on the server and in GitHub Secrets)
+.env
+.env.*
+!.env.example
+secrets/
+
+# Editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
