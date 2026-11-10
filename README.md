@@ -8,7 +8,9 @@ A progressive web app that overlays your own map image (a screenshot or scanned 
 
 ## Demo
 
-_Coming soon._ A GIF and a link to the live demo on GitHub Pages will be added. The demo uses a synthetic map, never real third-party map data.
+**Live demo:** <https://eng-ben.github.io/map-boundary-overlay/>
+
+The demo currently shows the project skeleton; map features arrive in later milestones. A GIF will be added with v0.1.0. The demo uses a synthetic map, never real third-party map data.
 
 ## Features
 
