@@ -1,7 +1,8 @@
 # CI: runs on every pull request and on pushes to main.
 # Job "checks" runs lint, type checking, formatting, unit tests and the build.
-# Job "e2e" runs Playwright end-to-end tests on Linux (they cannot run locally
-# on macOS 13, see docs/adr/004-e2e-in-ci-only.md).
+# Job "e2e" runs Playwright end-to-end tests on Linux for both base paths:
+#   "/" (home server image) and "/map-boundary-overlay/" (GitHub Pages).
+# E2e cannot run locally on macOS 13, see docs/adr/004-e2e-in-ci-only.md.
 # Least privilege: read-only access to the repository, no secrets.
 name: CI
 
@@ -49,4 +50,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run e2e
+      - name: E2e with base path /
+        run: npm run e2e
+        env:
+          BASE_PATH: /
+      - name: E2e with base path /map-boundary-overlay/
+        run: npm run e2e
+        env:
+          BASE_PATH: /map-boundary-overlay/
