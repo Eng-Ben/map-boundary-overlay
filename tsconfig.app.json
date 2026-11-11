@@ -1,3 +1,6 @@
+// TypeScript settings for the browser app in src/.
+// strict is set explicitly (portfolio standard) instead of relying on the
+// compiler default. Vite does the bundling, so tsc only type-checks.
 {
   "compilerOptions": {
     "strict": true,

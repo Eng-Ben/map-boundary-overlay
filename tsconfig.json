@@ -1,3 +1,7 @@
+// Root TypeScript project file.
+// Holds no compiler options itself; it references the two sub-projects
+// so `tsc -b` type-checks both the browser app (tsconfig.app.json)
+// and the Node-side files (tsconfig.node.json).
 {
   "files": [],
   "references": [
