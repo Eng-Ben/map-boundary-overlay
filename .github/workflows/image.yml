@@ -1,0 +1,71 @@
+# Container image: build, smoke test and publish to GHCR.
+# Pull requests: build and smoke test only, no push and no registry access.
+# Push to main or a v* tag: build, smoke test again, then push to
+# ghcr.io/eng-ben/map-boundary-overlay with tags sha-<short sha>,
+# latest (main only) and the semver version (tags only).
+# Least privilege: packages: write only in the publish job.
+# Plain docker commands are used instead of third-party actions to keep
+# the number of actions to trust and update small.
+name: Image
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  IMAGE: ghcr.io/eng-ben/map-boundary-overlay
+
+jobs:
+  image:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build image
+        run: docker build --platform linux/amd64 -t map-boundary-overlay:test .
+      - name: Smoke test image
+        run: scripts/smoke-test-image.sh map-boundary-overlay:test
+
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build image with tags
+        run: |
+          tags=(-t "${IMAGE}:sha-${GITHUB_SHA::7}")
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            tags+=(-t "${IMAGE}:latest")
+          fi
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            tags+=(-t "${IMAGE}:${GITHUB_REF_NAME#v}")
+          fi
+          docker build --platform linux/amd64 "${tags[@]}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.licenses=MIT" \
+            .
+      - name: Smoke test image
+        run: scripts/smoke-test-image.sh "${IMAGE}:sha-${GITHUB_SHA::7}"
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Push image
+        run: docker push --all-tags "${IMAGE}"

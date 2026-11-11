@@ -94,6 +94,16 @@ npm run build
 npm run preview
 ```
 
+Container image (as on the home server; listens on port 8080 without TLS):
+
+```sh
+docker run --rm -p 8080:8080 --read-only --tmpfs /tmp \
+  --cap-drop ALL --security-opt no-new-privileges \
+  ghcr.io/eng-ben/map-boundary-overlay:latest
+```
+
+Health check: `GET /healthz` returns 200.
+
 ## Testing and evaluation
 
 ```sh
@@ -105,6 +115,8 @@ npm run e2e
 ```
 
 End-to-end tests run in CI on Linux. Current Playwright browsers do not support macOS 13, so `npm run e2e` will not run on that version (see [ADR 004](docs/adr/004-e2e-in-ci-only.md)).
+
+The container image is built and smoke-tested in CI only (`scripts/smoke-test-image.sh`): health check, all referenced files, 404 for missing assets, no-cache on `index.html`, non-root user and memory below 300 MB, with a read-only filesystem and no capabilities.
 
 ## Roadmap
 

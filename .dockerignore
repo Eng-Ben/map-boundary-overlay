@@ -1,0 +1,16 @@
+# Files Docker should not send to the build.
+# Keeps the build context small and makes sure local dependencies,
+# build output, test reports and secrets never end up in the image.
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.git/
+.github/
+.env
+.env.*
+secrets/
+*.log
+.DS_Store
