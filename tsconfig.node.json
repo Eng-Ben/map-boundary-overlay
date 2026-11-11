@@ -1,3 +1,6 @@
+// TypeScript settings for files that run in Node, not the browser:
+// vite.config.ts, playwright.config.ts and the end-to-end tests in e2e/.
+// strict is set explicitly; tsc only type-checks.
 {
   "compilerOptions": {
     "strict": true,
